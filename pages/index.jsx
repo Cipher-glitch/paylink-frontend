@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 
-// === YOUR STRIPE TEST KEY ===
+// YOUR STRIPE PUBLISHABLE KEY (test or live)
 const stripePromise = loadStripe("pk_test_51SQNY9IYhuJFmWuRNhTQ2Lq5dRXbeXBzANTy4zu5hoGY9GFAYhbaT563TojXQ1MjRZNWXRBVaZTLzgDRZGxOyQY3004jBxd89O");
 
 export default function Home() {
@@ -16,7 +16,7 @@ export default function Home() {
   }, []);
 
   const handleSubmit = async () => {
-    if (!amount || amount < 1) return alert("Enter valid amount");
+    if (!amount || amount < 1) return alert("Please enter a valid amount");
 
     setLoading(true);
     const stripe = await stripePromise;
@@ -28,40 +28,63 @@ export default function Home() {
       body: JSON.stringify({ amount: Math.round(parseFloat(amount) * 100) }),
     });
 
-    const { clientSecret, error: backendError } = await res.json();
-    if (backendError) {
-      alert(backendError);
+    const data = await res.json();
+    if (data.error) {
+      alert(data.error);
       setLoading(false);
       return;
     }
 
-    const { error } = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: window.cardElement,
-      },
+    const { error } = await stripe.confirmCardPayment(data.clientSecret, {
+      payment_method: { card: window.cardElement },
     });
 
     if (error) {
       alert(error.message);
     } else {
-      alert("Payment Successful! 🎉");
+      alert("Payment Successful! Money sent to your bank.");
     }
     setLoading(false);
   };
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", maxWidth: 400, margin: "40px auto", padding: 20, border: "1px solid #ddd", borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
-      <h2 style={{ textAlign: "center", color: "#333" }}>Pay with Card</h2>
-      
+    <div style={{
+      fontFamily: "Arial, sans-serif",
+      maxWidth: 400,
+      margin: "40px auto",
+      padding: 20,
+      border: "1px solid #ddd",
+      borderRadius: 12,
+      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+      background: "#fff"
+    }}>
+      <h2 style={{ textAlign: "center", color: "#333", marginBottom: 20 }}>
+        Enter Card Details
+      </h2>
+
       <input
         type="number"
         placeholder="Amount in KES"
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
-        style={{ width: "100%", padding: 12, margin: "12px 0", border: "1px solid #ccc", borderRadius: 8, fontSize: 16 }}
+        style={{
+          width: "100%",
+          padding: 12,
+          margin: "12px 0",
+          border: "1px solid #ccc",
+          borderRadius: 8,
+          fontSize: 16
+        }}
       />
 
-      <div id="card-element" style={{ border: "1px solid #ccc", borderRadius: 8, padding: 12, background: "#fff", margin: "12px 0" }}></div>
+      {/* Stripe Card Element - Real Card Input */}
+      <div id="card-element" style={{
+        border: "1px solid #ccc",
+        borderRadius: 8,
+        padding: 12,
+        background: "#fff",
+        margin: "12px 0"
+      }}></div>
 
       <button
         onClick={handleSubmit}
@@ -76,15 +99,11 @@ export default function Home() {
           fontSize: 16,
           fontWeight: "bold",
           cursor: loading ? "not-allowed" : "pointer",
+          marginTop: 10
         }}
       >
-        {loading ? "Processing..." : "Pay Now"}
+        {loading ? "Processing..." : "Pay with Real Card"}
       </button>
-
-      <p style={{ fontSize: 12, color: "#777", textAlign: "center", marginTop: 20 }}>
-        Test cards: 4242 4242 4242 4242<br />
-        Any future expiry • Any CVV
-      </p>
 
       {/* Load Stripe.js */}
       <script src="https://js.stripe.com/v3/" async></script>
